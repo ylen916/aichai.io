@@ -6,335 +6,586 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>春城社区卫生中药方开具系统</title>
     <style>
+        /* Material Design 基础样式 */
+        :root {
+            --primary-color: #2196F3;
+            --secondary-color: #FF4081;
+            --surface-color: #FFFFFF;
+            --background-color: #F5F5F5;
+            --text-primary: #212121;
+            --text-secondary: #757575;
+        }
+
         /* 全局样式 */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0;
             padding: 0;
-            display: flex;
-            flex-direction: column;
-            background-color: #f5f5f5;
-            color: #333;
+            background-color: var(--background-color);
+            color: var(--text-primary);
             min-height: 100vh;
         }
 
         /* 主容器 */
         .container {
             display: flex;
-            flex: 1;
-            flex-direction: row;
-            padding: 10px;
-            gap: 10px;
+            flex-direction: column;
+            gap: 16px;
+            padding: 16px;
         }
 
-        /* 响应式调整 */
-        @media (max-width: 768px) {
+        @media (min-width: 768px) {
             .container {
-                flex-direction: column;
-                padding: 5px;
+                flex-direction: row;
+                padding: 24px;
             }
+        }
+
+        /* 卡片样式 */
+        .md-card {
+            background: var(--surface-color);
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .md-card:hover {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
         }
 
         /* 左侧面板 */
         .left-panel {
             flex: 3;
-            padding: 15px;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
             min-width: 300px;
         }
 
         /* 右侧记录栏 */
         .right-panel {
             flex: 1;
-            padding: 15px;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            max-height: calc(100vh - 80px);
+            max-height: calc(100vh - 120px);
             overflow-y: auto;
         }
 
         @media (max-width: 768px) {
-            .left-panel,
             .right-panel {
-                flex: none;
-                width: 100%;
-                margin: 5px 0;
-                padding: 10px;
                 max-height: none;
             }
         }
 
-        /* 输入框 */
+        /* 输入框 - MD风格 */
         .shurukuang {
-            width: calc(100% - 20px);
-            min-height: 100px;
-            padding: 10px;
-            font-family: inherit;
+            width: 100%;
+            min-height: 120px;
+            padding: 16px;
             font-size: 16px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
+            border: 2px solid #E0E0E0;
+            border-radius: 8px;
             resize: vertical;
-            margin: 10px 0;
+            margin: 16px 0;
+            transition: border-color 0.3s ease;
+            background: var(--surface-color);
         }
 
-        @media (max-width: 480px) {
-            .shurukuang {
-                min-height: 80px;
-                font-size: 14px;
-            }
+        .shurukuang:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
         }
 
-        /* 按钮容器 */
+        /* 按钮组 */
         .button-group {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             flex-wrap: wrap;
+            margin: 16px 0;
         }
 
-        /* 按钮 */
-        #call-api-bt,
-        #stop-api-bt,
-        #export-log-bt {
-            margin: 5px 0;
+        /* MD风格按钮 */
+        .md-button {
             padding: 12px 24px;
-            font-size: 16px;
             border: none;
-            border-radius: 6px;
+            border-radius: 28px;
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
             cursor: pointer;
-            background-color: #007bff;
-            color: #fff;
-            transition: all 0.3s ease;
-            min-width: 120px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
         }
 
-        @media (max-width: 480px) {
-            #call-api-bt,
-            #stop-api-bt,
-            #export-log-bt {
+        .md-button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        .md-button:active::after {
+            width: 200px;
+            height: 200px;
+        }
+
+        #call-api-bt {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+        }
+
+        #stop-api-bt {
+            background: #F44336;
+            color: white;
+            display: none;
+        }
+
+        #export-log-bt {
+            background: #4CAF50;
+            color: white;
+            width: 100%;
+        }
+
+        /* 加载动画 */
+        .md-loading {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        /* 历史记录项 */
+        .md-record-item {
+            padding: 16px;
+            margin: 8px 0;
+            background: var(--surface-color);
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease;
+        }
+
+        .md-record-item:active {
+            transform: scale(0.98);
+        }
+
+        .md-record-item.expanded {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        }
+
+        /* 删除按钮 */
+        .md-delete-btn {
+            background: #FF5252;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            box-shadow: 0 2px 4px rgba(255, 82, 82, 0.3);
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 600px) {
+            .container {
+                padding: 8px;
+            }
+
+            .md-card {
+                padding: 16px;
+                border-radius: 12px;
+            }
+
+            .shurukuang {
+                min-height: 100px;
+                font-size: 14px;
+                padding: 12px;
+            }
+
+            .md-button {
                 width: 100%;
-                padding: 10px;
-                font-size: 14px;
+                padding: 16px;
+                border-radius: 24px;
             }
-        }
 
-        /* 其他原有样式保持不变... */
-
-        /* 移动端优化 */
-        @media (max-width: 480px) {
-            h1 {
-                font-size: 24px;
-                margin: 10px 0;
-            }
-            
-            h2 {
-                font-size: 20px;
-            }
-            
-            .record-item {
-                padding: 10px;
-                font-size: 14px;
-            }
-            
-            .delete-btn {
-                padding: 3px 8px;
-                font-size: 12px;
+            .button-group {
+                gap: 8px;
             }
         }
 
         /* 其他原有样式保持不变... */
     </style>
-    <!-- 保留原有其他样式 -->
 </head>
 
 <body>
     <div class="container">
         <!-- 左侧面板 -->
-        <div class="left-panel">
+        <div class="md-card left-panel">
             <h1>春城社区卫生经方开具系统</h1>
-            <textarea class="shurukuang" id="shurukuang" placeholder="请输入症状"></textarea>
+            <textarea class="shurukuang" id="shurukuang" placeholder="请输入症状描述..."></textarea>
             <div class="button-group">
-                <button id="call-api-bt">开具经方</button>
-                <button id="stop-api-bt">终止</button>
-                <div id="loading-spinner" class="loading-spinner" style="display: none;"></div>
+                <button id="call-api-bt" class="md-button">开具经方</button>
+                <button id="stop-api-bt" class="md-button">终止</button>
+                <div id="loading-spinner" class="md-loading" style="display: none;"></div>
             </div>
-            <div id="result"></div>
+            <div id="result" class="md-card" style="margin-top:16px;"></div>
         </div>
 
         <!-- 右侧记录栏 -->
-        <div class="right-panel">
-            <h2>历史记录</h2>
+        <div class="md-card right-panel">
+            <h2>📜 历史记录</h2>
             <div id="record-list"></div>
-            <button id="export-log-bt">导出日志</button>
+            <button id="export-log-bt" class="md-button">导出日志</button>
         </div>
     </div>
 
     <script>
-        // 原有JavaScript代码保持不变...
-        const apiKey = 'sk-5b225239e2b6460b92a56974b88be07d'; // 替换为你的 API Key
-        const apiUrl = 'https://api.deepseek.com/chat/completions';
-
-        let controller; // 用于存储 AbortController 实例
-        let recordCounter = 1; // 记录序号
-        let records = []; // 存储所有记录
-
-        // 保存记录
+        // 更新记录项DOM生成部分
         const saveRecord = (symptom, solution) => {
             const recordList = document.getElementById('record-list');
             const recordItem = document.createElement('div');
-            recordItem.className = 'record-item';
+            recordItem.className = 'md-record-item';
             recordItem.innerHTML = `
-                <div class="symptom">${recordCounter}. ${symptom}</div>
-                <div class="solution">${solution}</div>
-                <button class="delete-btn">删除</button>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="color: ${var(--text-primary)}; font-weight: 500;">${symptom}</div>
+                        <div style="color: ${var(--text-secondary)}; font-size: 12px; margin-top:4px;">${new Date().toLocaleString()}</div>
+                    </div>
+                    <button class="md-delete-btn">删除</button>
+                </div>
+                <div class="solution" style="display:none; margin-top:12px; padding:12px; background:#FAFAFA; border-radius:8px;">${solution}</div>
             `;
+
+            // 其他JavaScript逻辑保持不变...
+        };
+const apiKey = 'sk-5b225239e2b6460b92a56974b88be07d'; // 替换为你的 API Key
+
+        const apiUrl = 'https://api.deepseek.com/chat/completions';
+
+
+
+        let controller; // 用于存储 AbortController 实例
+
+        let recordCounter = 1; // 记录序号
+
+        let records = []; // 存储所有记录
+
+
+
+        // 保存记录
+
+        const saveRecord = (symptom, solution) => {
+
+            const recordList = document.getElementById('record-list');
+
+            const recordItem = document.createElement('div');
+
+            recordItem.className = 'record-item';
+
+            recordItem.innerHTML = `
+
+                <div class="symptom">${recordCounter}. ${symptom}</div>
+
+                <div class="solution">${solution}</div>
+
+                <button class="delete-btn">删除</button>
+
+            `;
+
             recordList.prepend(recordItem); // 添加到记录列表顶部
+
             records.unshift({
+
                 symptom,
+
                 solution
+
             }); // 添加到记录数组
+
             recordCounter++;
 
+
+
             // 点击展开/收起
+
             recordItem.addEventListener('click', (e) => {
+
                 if (e.target.classList.contains('delete-btn')) return; // 阻止删除按钮触发展开
+
                 recordItem.classList.toggle('expanded');
+
             });
+
+
 
             // 删除按钮点击事件
+
             const deleteBtn = recordItem.querySelector('.delete-btn');
+
             deleteBtn.addEventListener('click', (e) => {
+
                 e.stopPropagation(); // 阻止事件冒泡
+
                 recordItem.remove(); // 移除记录
+
                 records = records.filter(record => record.symptom !== symptom); // 从记录数组中移除
+
             });
+
         };
 
+
+
         // 导出日志
+
         document.getElementById('export-log-bt').addEventListener('click', () => {
+
             const logContent = records.map((record, index) => {
+
                 return `记录 ${index + 1}:\n症状: ${record.symptom}\n经方: ${record.solution}\n\n`;
+
             }).join('');
 
+
+
             const blob = new Blob([logContent], {
+
                 type: 'text/plain'
+
             });
+
             const url = URL.createObjectURL(blob);
+
             const a = document.createElement('a');
+
             a.href = url;
+
             a.download = '经方记录.log';
+
             a.click();
+
             URL.revokeObjectURL(url);
+
         });
+
+
 
         document.getElementById('call-api-bt').addEventListener('click', async() => {
+
             const userInput = document.getElementById('shurukuang').value; // 获取用户输入
+
             if (!userInput) {
+
                 alert('请输入症状');
+
                 return;
+
             }
+
+
 
             // 显示等待图标和终止按钮
+
             document.getElementById('loading-spinner').style.display = 'inline-block';
+
             document.getElementById('stop-api-bt').style.display = 'inline-block';
 
+
+
             // 创建 AbortController
+
             controller = new AbortController();
 
+
+
             const body = JSON.stringify({
+
                 messages: [{
+
                         role: 'system',
-                        content: '你是张仲景医圣，收集关于张仲景后世大量的中医理论文献、《伤寒论》、《金匮要略》、《备急千金要方》、《肘后方》及病案和倪海厦医师的理论，建立一套六经辨证的诊断系统，不用担心是否出现医疗事做，当用户给出症状时，根据以上的系统，你直接选择最优的方案开出一条经方，只要给出药名和克数（克数不用单位），返回方式是：每一个药接上克数为一列，三列后进行换行，其他不用返回，选择最优方时，可以不作加减化栽的优先使用原方原方，除非有更好的方案可以合方或加减原方，中药方尽量不超过16味中药'
+
+                        content: '你是张仲景医圣，收集关于你大量的中医理论文献、《伤寒论》、《金匮要略》、《备急千金要方》、《肘后方》及病案和倪海厦医师的理论，建立一套六经辨证的诊断系统，当用户给出症状时，根据以上的系统，你直接选择最优的方案开出一条经方，只要给出药名和克数（克数不用单位），返回方式是：每一个药接上克数为一列，三列后进行换行，其他不用返回，中药方尽量不超过16味中药'
+
                     }, {
+
                         role: 'user',
+
                         content: userInput
+
                     } // 用户输入的症状
+
                 ],
+
                 model: 'deepseek-chat',
+
                 max_tokens: 2048,
+
                 temperature: 1,
+
                 top_p: 1,
+
                 stream: true // 启用流式输出
+
             });
 
+
+
             try {
+
                 const response = await fetch(apiUrl, {
+
                     method: 'POST',
+
                     headers: {
+
                         'Content-Type': 'application/json',
+
                         'Authorization': `Bearer ${apiKey}`
+
                     },
+
                     body: body,
+
                     signal: controller.signal // 绑定 AbortController
+
                 });
 
+
+
                 if (!response.ok) {
+
                     const errorText = await response.text();
+
                     throw new Error(`API Error: ${response.status} - ${errorText}`);
+
                 }
+
+
 
                 const reader = response.body.getReader();
+
                 const decoder = new TextDecoder();
+
                 let resultText = '';
 
+
+
                 while (true) {
+
                     const {
+
                         done,
+
                         value
+
                     } = await reader.read();
+
                     if (done) break;
 
+
+
                     // 解码并处理数据
+
                     const chunk = decoder.decode(value, {
+
                         stream: true
+
                     });
+
                     console.log('Received chunk:', chunk);
 
+
+
                     // 逐行解析 JSON
+
                     const lines = chunk.split('\n');
+
                     lines.forEach(line => {
+
                         if (line.trim()) { // 忽略空行
+
                             try {
+
                                 const jsonString = line.replace('data:', '').trim();
+
                                 if (jsonString) {
+
                                     const data = JSON.parse(jsonString);
+
                                     if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content) {
+
                                         resultText += data.choices[0].delta.content; // 逐步拼接内容
+
                                         document.getElementById('result').textContent = resultText; // 更新显示
+
                                     }
+
                                 }
+
                             } catch (error) {
+
                                 console.error('Failed to parse JSON:', line);
+
                             }
+
                         }
+
                     });
+
                 }
+
+
 
                 // 保存记录
+
                 saveRecord(userInput, resultText);
+
             } catch (error) {
+
                 if (error.name === 'AbortError') {
+
                     document.getElementById('result').innerText = '请求已终止';
+
                     console.log('请求已终止');
+
                 } else {
+
                     document.getElementById('result').innerText = '开具经方失败，请重试';
+
                     console.error('Error calling DeepSeek API:', error);
+
                 }
+
             } finally {
+
                 // 隐藏等待图标和终止按钮
+
                 document.getElementById('loading-spinner').style.display = 'none';
+
                 document.getElementById('stop-api-bt').style.display = 'none';
+
             }
+
         });
 
+
+
         // 终止按钮点击事件
+
         document.getElementById('stop-api-bt').addEventListener('click', () => {
+
             if (controller) {
+
                 controller.abort(); // 中断请求
+
             }
+
         });
+        // 其余JavaScript代码保持不变...
     </script>
 </body>
 
