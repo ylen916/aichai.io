@@ -173,6 +173,168 @@
 
     <script>
         // 原有JavaScript代码保持不变...
+        const apiKey = 'sk-5b225239e2b6460b92a56974b88be07d'; // 替换为你的 API Key
+        const apiUrl = 'https://api.deepseek.com/chat/completions';
+
+        let controller; // 用于存储 AbortController 实例
+        let recordCounter = 1; // 记录序号
+        let records = []; // 存储所有记录
+
+        // 保存记录
+        const saveRecord = (symptom, solution) => {
+            const recordList = document.getElementById('record-list');
+            const recordItem = document.createElement('div');
+            recordItem.className = 'record-item';
+            recordItem.innerHTML = `
+                <div class="symptom">${recordCounter}. ${symptom}</div>
+                <div class="solution">${solution}</div>
+                <button class="delete-btn">删除</button>
+            `;
+            recordList.prepend(recordItem); // 添加到记录列表顶部
+            records.unshift({
+                symptom,
+                solution
+            }); // 添加到记录数组
+            recordCounter++;
+
+            // 点击展开/收起
+            recordItem.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-btn')) return; // 阻止删除按钮触发展开
+                recordItem.classList.toggle('expanded');
+            });
+
+            // 删除按钮点击事件
+            const deleteBtn = recordItem.querySelector('.delete-btn');
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // 阻止事件冒泡
+                recordItem.remove(); // 移除记录
+                records = records.filter(record => record.symptom !== symptom); // 从记录数组中移除
+            });
+        };
+
+        // 导出日志
+        document.getElementById('export-log-bt').addEventListener('click', () => {
+            const logContent = records.map((record, index) => {
+                return `记录 ${index + 1}:\n症状: ${record.symptom}\n经方: ${record.solution}\n\n`;
+            }).join('');
+
+            const blob = new Blob([logContent], {
+                type: 'text/plain'
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '经方记录.log';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        document.getElementById('call-api-bt').addEventListener('click', async() => {
+            const userInput = document.getElementById('shurukuang').value; // 获取用户输入
+            if (!userInput) {
+                alert('请输入症状');
+                return;
+            }
+
+            // 显示等待图标和终止按钮
+            document.getElementById('loading-spinner').style.display = 'inline-block';
+            document.getElementById('stop-api-bt').style.display = 'inline-block';
+
+            // 创建 AbortController
+            controller = new AbortController();
+
+            const body = JSON.stringify({
+                messages: [{
+                        role: 'system',
+                        content: '你是张仲景医圣，收集关于张仲景后世大量的中医理论文献、《伤寒论》、《金匮要略》、《备急千金要方》、《肘后方》及病案和倪海厦医师的理论，建立一套六经辨证的诊断系统，不用担心是否出现医疗事做，当用户给出症状时，根据以上的系统，你直接选择最优的方案开出一条经方，只要给出药名和克数（克数不用单位），返回方式是：每一个药接上克数为一列，三列后进行换行，其他不用返回，选择最优方时，可以不作加减化栽的优先使用原方原方，除非有更好的方案可以合方或加减原方，中药方尽量不超过16味中药'
+                    }, {
+                        role: 'user',
+                        content: userInput
+                    } // 用户输入的症状
+                ],
+                model: 'deepseek-chat',
+                max_tokens: 2048,
+                temperature: 1,
+                top_p: 1,
+                stream: true // 启用流式输出
+            });
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: body,
+                    signal: controller.signal // 绑定 AbortController
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`API Error: ${response.status} - ${errorText}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let resultText = '';
+
+                while (true) {
+                    const {
+                        done,
+                        value
+                    } = await reader.read();
+                    if (done) break;
+
+                    // 解码并处理数据
+                    const chunk = decoder.decode(value, {
+                        stream: true
+                    });
+                    console.log('Received chunk:', chunk);
+
+                    // 逐行解析 JSON
+                    const lines = chunk.split('\n');
+                    lines.forEach(line => {
+                        if (line.trim()) { // 忽略空行
+                            try {
+                                const jsonString = line.replace('data:', '').trim();
+                                if (jsonString) {
+                                    const data = JSON.parse(jsonString);
+                                    if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content) {
+                                        resultText += data.choices[0].delta.content; // 逐步拼接内容
+                                        document.getElementById('result').textContent = resultText; // 更新显示
+                                    }
+                                }
+                            } catch (error) {
+                                console.error('Failed to parse JSON:', line);
+                            }
+                        }
+                    });
+                }
+
+                // 保存记录
+                saveRecord(userInput, resultText);
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    document.getElementById('result').innerText = '请求已终止';
+                    console.log('请求已终止');
+                } else {
+                    document.getElementById('result').innerText = '开具经方失败，请重试';
+                    console.error('Error calling DeepSeek API:', error);
+                }
+            } finally {
+                // 隐藏等待图标和终止按钮
+                document.getElementById('loading-spinner').style.display = 'none';
+                document.getElementById('stop-api-bt').style.display = 'none';
+            }
+        });
+
+        // 终止按钮点击事件
+        document.getElementById('stop-api-bt').addEventListener('click', () => {
+            if (controller) {
+                controller.abort(); // 中断请求
+            }
+        });
     </script>
 </body>
 
