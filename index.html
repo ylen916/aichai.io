@@ -3,292 +3,381 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>春城社区卫生中药方开具系统</title>
     <style>
-       
-        /* 其他原有样式保持不变... */
+        /* 全局样式 */
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        /* 左侧面板 */
+        
+        .left-panel {
+            flex: 3;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin: 20px;
+            border-radius: 8px;
+        }
+        /* 右侧记录栏 */
+        
+        .right-panel {
+            flex: 1;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin: 20px;
+            border-radius: 8px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+        /* 输入框 */
+        
+        .shurukuang {
+            width: 95%;
+            min-height: 80px;
+            padding: 10px;
+            font-family: inherit;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            margin-bottom: 10px;
+        }
+        /* 按钮 */
+        
+        #call-api-bt,
+        #stop-api-bt,
+        #export-log-bt {
+            margin: 10px 0;
+            padding: 10px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: #fff;
+            transition: background-color 0.3s ease;
+        }
+        
+        #call-api-bt:hover,
+        #stop-api-bt:hover,
+        #export-log-bt:hover {
+            background-color: #0056b3;
+        }
+        
+        #stop-api-bt {
+            background-color: #dc3545;
+            display: none;
+        }
+        
+        #stop-api-bt:hover {
+            background-color: #c82333;
+        }
+        
+        #export-log-bt {
+            background-color: #28a745;
+            margin-top: 20px;
+        }
+        
+        #export-log-bt:hover {
+            background-color: #218838;
+        }
+        /* 结果框 */
+        
+        #result {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', Courier, monospace;
+            /* 等宽字体 */
+            min-height: 80px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        /* 转圈动画 */
+        
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        /* 等待图标样式 */
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ccc;
+            border-top-color: #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        /* 记录栏样式 */
+        
+        .record-item {
+            margin-bottom: 10px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fff;
+            cursor: pointer;
+            transition: box-shadow 0.3s ease;
+            position: relative;
+        }
+        
+        .record-item:hover {
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .record-item .symptom {
+            font-weight: bold;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .record-item .solution {
+            display: none;
+            margin-top: 10px;
+            font-family: 'Courier New', Courier, monospace;
+            /* 等宽字体 */
+            font-size: 14px;
+            white-space: pre-wrap;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        
+        .record-item.expanded .solution {
+            display: block;
+        }
+        /* 删除按钮 */
+        
+        .delete-btn {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background-color: #dc3545;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
     </style>
-    <link crossorigin="anonymous" media="all" rel="stylesheet" href="./style.css">
 </head>
 
 <body>
-    <div class="container">
-        <!-- 左侧面板 -->
-        <div class="md-card left-panel">
-            <h1>春城社区卫生经方开具系统</h1>
-            <textarea class="shurukuang" id="shurukuang" placeholder="请输入症状描述..."></textarea>
-            <div class="button-group">
-                <button id="call-api-bt" class="md-button">开具经方</button>
-                <button id="stop-api-bt" class="md-button">终止</button>
-                <div id="loading-spinner" class="md-loading" style="display: none;"></div>
-            </div>
-            <div id="result" class="md-card" style="margin-top:16px;"></div>
+    <!-- 左侧面板 -->
+    <div class="left-panel">
+        <h1>春城社区卫生经方开具系统</h1>
+        <textarea class="shurukuang" id="shurukuang" placeholder="请输入症状"></textarea>
+        <div>
+            <button id="call-api-bt">开具经方</button>
+            <button id="stop-api-bt">终止</button>
+            <div id="loading-spinner" class="loading-spinner" style="display: none;"></div>
         </div>
-
-        <!-- 右侧记录栏 -->
-        <div class="md-card right-panel">
-            <h2>📜 历史记录</h2>
-            <div id="record-list"></div>
-            <button id="export-log-bt" class="md-button">导出日志</button>
-        </div>
+        <div id="result"></div>
     </div>
-<script>
-    // 模块化封装核心功能
-    const App = (() => {
-        // 配置常量
-        const CONFIG = {
-            API_KEY: 'sk-5b225239e2b6460b92a56974b88be07d',
-            API_URL: 'https://api.deepseek.com/chat/completions',
-            SYSTEM_PROMPT: `{作为张仲景医圣，我整合了后世大量的中医理论文献，包括《伤寒论》、《金匮要略》、《备急千金要方》、《肘后方》及病案，建立了一套六经辨证的诊断系统。
-            当用户提供症状时，我将根据这一系统，精准匹配书中条文，选择最优的经方方案。分析翻译《伤寒论》及《金匮要略》的条例，作为白话文症状。
-            若症状与书中原文条例比较吻合，优先使用原方原量，不作加减化裁；若症状复杂或需更优治疗，则根据具体情况合方或加减原方。
-            中药方控制在12味以内，必要时可扩展至16味。返回方式为：每一味药接上克数为一列，三列后进行换行。
-            注意，如果客户发送出现【管理员】两个字眼口令，此时识别客户为管理员身份，进行完整的deepseek对话，以上方案暂停开方，并将根据管理员提出的要求进行更改修正，如当客户发送出现【开方】两个字眼口令}，再以上要求进行开方` };
 
-        // 状态管理
-        let state = {
-            controller: null,
-            records: JSON.parse(localStorage.getItem('medicalRecords')) || [],
-            recordCounter: localStorage.getItem('recordCounter') || 1
+    <!-- 右侧记录栏 -->
+    <div class="right-panel">
+        <h2>历史记录</h2>
+        <div id="record-list"></div>
+        <button id="export-log-bt">导出日志</button>
+    </div>
+
+    <script>
+        const apiKey = 'sk-5b225239e2b6460b92a56974b88be07d'; // 替换为你的 API Key
+        const apiUrl = 'https://api.deepseek.com/chat/completions';
+
+        let controller; // 用于存储 AbortController 实例
+        let recordCounter = 1; // 记录序号
+        let records = []; // 存储所有记录
+
+        // 保存记录
+        const saveRecord = (symptom, solution) => {
+            const recordList = document.getElementById('record-list');
+            const recordItem = document.createElement('div');
+            recordItem.className = 'record-item';
+            recordItem.innerHTML = `
+                <div class="symptom">${recordCounter}. ${symptom}</div>
+                <div class="solution">${solution}</div>
+                <button class="delete-btn">删除</button>
+            `;
+            recordList.prepend(recordItem); // 添加到记录列表顶部
+            records.unshift({
+                symptom,
+                solution
+            }); // 添加到记录数组
+            recordCounter++;
+
+            // 点击展开/收起
+            recordItem.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-btn')) return; // 阻止删除按钮触发展开
+                recordItem.classList.toggle('expanded');
+            });
+
+            // 删除按钮点击事件
+            const deleteBtn = recordItem.querySelector('.delete-btn');
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // 阻止事件冒泡
+                recordItem.remove(); // 移除记录
+                records = records.filter(record => record.symptom !== symptom); // 从记录数组中移除
+            });
         };
 
-        // DOM元素缓存
-        const elements = {
-            input: document.getElementById('shurukuang'),
-            result: document.getElementById('result'),
-            recordList: document.getElementById('record-list'),
-            loadingSpinner: document.getElementById('loading-spinner'),
-            callApiBtn: document.getElementById('call-api-bt'),
-            stopApiBtn: document.getElementById('stop-api-bt'),
-            exportBtn: document.getElementById('export-log-bt')
-        };
+        // 导出日志
+        document.getElementById('export-log-bt').addEventListener('click', () => {
+            const logContent = records.map((record, index) => {
+                return `记录 ${index + 1}:\n症状: ${record.symptom}\n经方: ${record.solution}\n\n`;
+            }).join('');
 
-        // 工具方法
-        const utils = {
-            safeParseJSON: (str) => {
-                try {
-                    return JSON.parse(str);
-                } catch {
-                    return null;
-                }
-            },
-            
-            formatTimestamp: (date) => {
-                return date.toLocaleString('zh-CN', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                });
+            const blob = new Blob([logContent], {
+                type: 'text/plain'
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '经方记录.log';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        document.getElementById('call-api-bt').addEventListener('click', async() => {
+            const userInput = document.getElementById('shurukuang').value; // 获取用户输入
+            if (!userInput) {
+                alert('请输入症状');
+                return;
             }
-        };
 
-        // API服务
-        const apiService = {
-            async fetchPrescription(symptoms) {
-                state.controller = new AbortController();
-                
-                const response = await fetch(CONFIG.API_URL, {
+            // 显示等待图标和终止按钮
+            document.getElementById('loading-spinner').style.display = 'inline-block';
+            document.getElementById('stop-api-bt').style.display = 'inline-block';
+
+            // 创建 AbortController
+            controller = new AbortController();
+
+            const body = JSON.stringify({
+                messages: [{
+                        role: 'system',
+                        content: `{作为你是张仲景医圣，我从网上收集并整合了后世大量的中医理论文献，包括《伤寒论》、《金匮要略》、《备急千金要方》、《肘后方》及病案，建立了一套六经辨证的诊断系统。
+            当用户提供症状时，我将根据这一系统，精准匹配书中条文，选择最优的经方方案。分析翻译《伤寒论》及《金匮要略》和《备急千金要方》、《肘后方》的条例，翻译原文作为白话文症状，
+            若症状与书中原文条例比较吻合，优先使用原方原量，不作加减化裁；若症状复杂或需更优治疗，则根据具体情况合方或加减原方。
+            中药方控制在12味以内，必要时可扩展至16味。返回方式为：每一味药接上克数为一列，三列后进行换行，回复时只要给出药名和克数（克数不用单位），其他解析等不要返回，原方中出现的枚、升、斗等等药量单位，根据现代克数转化。
+            注意，如果客户发送出现【管理员】两个字眼口令，此时识别客户为管理员身份，进行完整的deepseek对话，以上方案暂停开方，并将根据管理员提出的要求进行更改修正，
+            如当客户发送出现【开方】两个字眼口令}，再以上要求进行开方，没有在发送【开方】口令时，请以分析方式回复我。`
+                    }, {
+                        role: 'user',
+                        content: userInput
+                    } // 用户输入的症状
+                ],
+                model: 'deepseek-reasoner',
+                max_tokens: 3048,
+                temperature: 1,
+                top_p: 1,
+                stream: true // 启用流式输出
+            });
+
+            try {
+                const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${CONFIG.API_KEY}`
+                        'Authorization': `Bearer ${apiKey}`
                     },
-                    body: JSON.stringify({
-                        messages: [
-                            { role: 'system', content: CONFIG.SYSTEM_PROMPT },
-                            { role: 'user', content: symptoms }
-                        ],
-                        model: 'deepseek-reasoner',
-                        max_tokens: 3048,
-                        temperature: 1,
-                        top_p: 1,
-                        stream: true
-                    }),
-                    signal: state.controller.signal
+                    body: body,
+                    signal: controller.signal // 绑定 AbortController
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`API Error: ${errorData.error?.message || response.statusText}`);
+                    const errorText = await response.text();
+                    throw new Error(`API Error: ${response.status} - ${errorText}`);
                 }
 
-                return response.body.getReader();
-            },
-
-            processStream: async (reader, callback) => {
+                const reader = response.body.getReader();
                 const decoder = new TextDecoder();
-                let result = '';
+                let resultText = '';
 
                 while (true) {
-                    const { done, value } = await reader.read();
+                    const {
+                        done,
+                        value
+                    } = await reader.read();
                     if (done) break;
 
-                    const chunk = decoder.decode(value, { stream: true });
-                    chunk.split('\n').forEach(line => {
-                        const data = utils.safeParseJSON(line.replace('data:', '').trim());
-                        if (data?.choices?.[0]?.delta?.content) {
-                            result += data.choices[0].delta.content;
-                            callback(result);
+                    // 解码并处理数据
+                    const chunk = decoder.decode(value, {
+                        stream: true
+                    });
+                    console.log('Received chunk:', chunk);
+
+                    // 逐行解析 JSON
+                    const lines = chunk.split('\n');
+                    lines.forEach(line => {
+                        if (line.trim()) { // 忽略空行
+                            try {
+                                const jsonString = line.replace('data:', '').trim();
+                                if (jsonString) {
+                                    const data = JSON.parse(jsonString);
+                                    if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content) {
+                                        resultText += data.choices[0].delta.content; // 逐步拼接内容
+                                        document.getElementById('result').textContent = resultText; // 更新显示
+                                    }
+                                }
+                            } catch (error) {
+                                console.error('Failed to parse JSON:', line);
+                            }
                         }
                     });
                 }
 
-                return result;
+                // 保存记录
+                saveRecord(userInput, resultText);
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    document.getElementById('result').innerText = '请求已终止';
+                    console.log('请求已终止');
+                } else {
+                    document.getElementById('result').innerText = '开具经方失败，请重试';
+                    console.error('Error calling DeepSeek API:', error);
+                }
+            } finally {
+                // 隐藏等待图标和终止按钮
+                document.getElementById('loading-spinner').style.display = 'none';
+                document.getElementById('stop-api-bt').style.display = 'none';
             }
-        };
+        });
 
-        // 记录管理
-        const recordManager = {
-            addRecord(symptoms, solution) {
-                const record = {
-                    id: Date.now(),
-                    symptoms,
-                    solution,
-                    timestamp: new Date()
-                };
-
-                state.records.unshift(record);
-                state.recordCounter++;
-                localStorage.setItem('medicalRecords', JSON.stringify(state.records));
-                localStorage.setItem('recordCounter', state.recordCounter);
-                return record;
-            },
-
-            deleteRecord(id) {
-                state.records = state.records.filter(r => r.id !== id);
-                localStorage.setItem('medicalRecords', JSON.stringify(state.records));
-            },
-
-            renderRecords() {
-                elements.recordList.innerHTML = state.records
-                    .map((record, index) => `
-                        <div class="md-record-item" data-id="${record.id}">
-                            <div class="record-header">
-                                <div class="record-meta">
-                                    <span class="record-index">#${index + 1}</span>
-                                    <span class="record-time">${utils.formatTimestamp(new Date(record.timestamp))}</span>
-                                </div>
-                                <button class="md-delete-btn">删除</button>
-                            </div>
-                            <div class="symptoms-preview">${record.symptoms.slice(0, 50)}...</div>
-                            <pre class="solution">${record.solution}</pre>
-                        </div>
-                    `).join('');
+        // 终止按钮点击事件
+        document.getElementById('stop-api-bt').addEventListener('click', () => {
+            if (controller) {
+                controller.abort(); // 中断请求
             }
-        };
-
-        // UI控制器
-        const uiController = {
-            toggleLoading(show) {
-                elements.loadingSpinner.style.display = show ? 'inline-block' : 'none';
-                elements.stopApiBtn.style.display = show ? 'inline-block' : 'none';
-                elements.callApiBtn.disabled = show;
-            },
-
-            updateResult(content) {
-                elements.result.textContent = content;
-            },
-
-            clearInput() {
-                elements.input.value = '';
-            },
-
-            initEventListeners() {
-                // API调用
-                elements.callApiBtn.addEventListener('click', async () => {
-                    if (!elements.input.value.trim()) {
-                        alert('请输入有效症状描述');
-                        return;
-                    }
-
-                    try {
-                        uiController.toggleLoading(true);
-                        const reader = await apiService.fetchPrescription(elements.input.value.trim());
-                        const finalResult = await apiService.processStream(reader, (partialResult) => {
-                            uiController.updateResult(partialResult);
-                        });
-                        
-                        const newRecord = recordManager.addRecord(elements.input.value.trim(), finalResult);
-                        recordManager.renderRecords();
-                    uiController.clearInput();
-                    } catch (error) {
-                        if (error.name === 'AbortError') {
-                            uiController.updateResult('请求已终止');
-                        } else {
-                            console.error('API Error:', error);
-                            uiController.updateResult(`错误: ${error.message}`);
-                        }
-                    } finally {
-                        uiController.toggleLoading(false);
-                    }
-                });
-
-                // 终止请求
-                elements.stopApiBtn.addEventListener('click', () => {
-                    if (state.controller) {
-                        state.controller.abort();
-                    }
-                });
-
-                // 导出日志
-                elements.exportBtn.addEventListener('click', () => {
-                    const content = state.records
-                        .map((r, i) => `记录 ${i + 1}:\n时间: ${utils.formatTimestamp(new Date(r.timestamp))}\n症状: ${r.symptoms}\n经方:\n${r.solution}\n${'-'.repeat(50)}\n`)
-                        .join('\n');
-
-                    try {
-                        const blob = new Blob([content], { type: 'text/plain' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `经方记录_${utils.formatTimestamp(new Date())}.log`;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                    } catch (error) {
-                        console.error('导出失败:', error);
-                        alert('日志导出失败，请重试');
-                    }
-                });
-
-                // 动态元素事件委托
-                elements.recordList.addEventListener('click', (e) => {
-                    const recordItem = e.target.closest('.md-record-item');
-                    
-                    // 删除操作
-                    if (e.target.classList.contains('md-delete-btn')) {
-                        const recordId = parseInt(recordItem.dataset.id);
-                        recordManager.deleteRecord(recordId);
-                        recordItem.remove();
-                        return;
-                    }
-
-                    // 展开/收起
-                    if (recordItem) {
-                        recordItem.classList.toggle('expanded');
-                    }
-                });
-            }
-        };
-
-        // 初始化应用
-        return {
-            init() {
-                recordManager.renderRecords();
-                uiController.initEventListeners();
-            }
-        };
-    })();
-
-    // 启动应用
-    document.addEventListener('DOMContentLoaded', App.init);
-</script>
-    
+        });
+    </script>
 </body>
 
 </html>
